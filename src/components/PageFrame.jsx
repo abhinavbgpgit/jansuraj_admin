@@ -1,0 +1,7 @@
+export default function PageFrame({ eyebrow = 'Bihar / Workspace', title, description, action = '＋ Add new', children }) {
+  return <div className="mx-auto max-w-[1500px] px-5 py-7 md:px-10"><div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold text-[#08776d]">{eyebrow}</p><h2 className="mt-2 text-3xl font-bold tracking-tight">{title}</h2><p className="mt-1 text-sm text-slate-500">{description}</p></div>{action && <button className="rounded-xl bg-[#0b766d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#095f58]">{action}</button>}</div>{children}</div>
+}
+
+export function Panel({ title, subtitle, children }) { return <section className="rounded-2xl border border-slate-200 bg-white p-6"><div className="flex items-start justify-between gap-4"><div><h3 className="font-bold">{title}</h3>{subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}</div><button className="text-xs font-semibold text-[#08776d]">View all →</button></div><div className="mt-5">{children}</div></section> }
+
+export function Stat({ label, value, change = '+6.1%' }) { return <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-4 text-3xl font-bold tracking-tight">{value}</p><p className="mt-2 text-xs text-[#08776d]">{change} <span className="text-slate-400">vs last period</span></p></div> }

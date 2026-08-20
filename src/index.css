@@ -9,5 +9,73 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #0f172a;
+  background: #f6f8f7;
+  font-family: 'Inter', sans-serif;
 }
+
+button, input, select {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+@keyframes map-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+}
+
+.animate-fade-in-up { animation: fade-in-up 0.5s ease-out both; }
+.animate-fade-in { animation: fade-in 0.4s ease-out both; }
+.animate-slide-in-right { animation: slide-in-right 0.4s ease-out both; }
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+.progress-bar { animation: progress-fill 1.2s ease-out both; }
+.district-bar:hover { transform: translateX(4px); }
+.activity-dot { animation: breathe 2s ease-in-out infinite; }
+.map-dot::after { content: ''; position: absolute; inset: -4px; border-radius: 9999px; animation: pulse-ring 2s ease-out infinite; }
+.map-dot-rose::after { background: rgba(244, 63, 94, 0.3); }
+.map-dot-amber::after { background: rgba(245, 158, 11, 0.3); }
+.map-dot-emerald::after { background: rgba(16, 185, 129, 0.3); }
+.map-dot-blue::after { background: rgba(59, 130, 246, 0.3); }
+.live-indicator { display: inline-flex; align-items: center; gap: 6px; }
+.live-indicator::before { content: ''; width: 8px; height: 8px; border-radius: 9999px; background: #10b981; animation: map-pulse 1.5s ease-in-out infinite; }
+.status-dot::after { content: ''; position: absolute; inset: -2px; border-radius: 9999px; animation: pulse-ring 2s ease-out infinite; }
+.status-dot.active::after { background: rgba(16, 185, 129, 0.3); }
+.status-dot.review::after { background: rgba(245, 158, 11, 0.3); }
