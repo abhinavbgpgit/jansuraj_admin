@@ -6,14 +6,11 @@ import axios from "axios";
 // ==========================================
 function StatusBadge({ status }) {
   const styles = {
-    Active:
-      "border-success-200 bg-success-50 text-success-700",
+    Active: "border-success-200 bg-success-50 text-success-700",
 
-    Review:
-      "border-warning-200 bg-warning-50 text-warning-700",
+    Review: "border-warning-200 bg-warning-50 text-warning-700",
 
-    Inactive:
-      "border-slate-200 bg-slate-50 text-slate-500",
+    Inactive: "border-slate-200 bg-slate-50 text-slate-500",
   };
 
   const dot =
@@ -29,9 +26,7 @@ function StatusBadge({ status }) {
         styles[status] || styles.Inactive
       }`}
     >
-      <span
-        className={`status-dot relative h-2 w-2 rounded-full ${dot}`}
-      />
+      <span className={`status-dot relative h-2 w-2 rounded-full ${dot}`} />
 
       {status}
     </span>
@@ -76,9 +71,7 @@ function MetricCard({ metric, index }) {
             {metric.value}
           </p>
 
-          <p className="mt-1 text-xs text-slate-400">
-            {metric.description}
-          </p>
+          <p className="mt-1 text-xs text-slate-400">{metric.description}</p>
         </div>
 
         <span
@@ -98,13 +91,10 @@ function MetricCard({ metric, index }) {
               : "bg-success-50 text-success-700"
           }`}
         >
-          {metric.change.startsWith("−") ? "↓" : "↑"}{" "}
-          {metric.change}
+          {metric.change.startsWith("−") ? "↓" : "↑"} {metric.change}
         </span>
 
-        <span className="text-xs text-slate-400">
-          vs last month
-        </span>
+        <span className="text-xs text-slate-400">vs last month</span>
       </div>
     </div>
   );
@@ -123,23 +113,16 @@ function UserRow({ user, index }) {
       .slice(0, 2)
       .toUpperCase() || "U";
 
-  const location = [
-    user.ward,
-    user.localBody,
-    user.district,
-  ]
+  const location = [user.ward, user.localBody, user.district]
     .filter(Boolean)
     .join(", ");
 
   const joined = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }
-      )
+    ? new Date(user.createdAt).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
   return (
@@ -174,9 +157,7 @@ function UserRow({ user, index }) {
               {user.name || "Unknown User"}
             </p>
 
-            <p className="text-xs text-slate-400">
-              ID: {user._id}
-            </p>
+            <p className="text-xs text-slate-400">ID: {user._id}</p>
           </div>
         </div>
       </td>
@@ -184,36 +165,28 @@ function UserRow({ user, index }) {
       {/* =========================
           CONTACT
       ========================= */}
-      <td className="px-6 py-4 text-slate-600">
-        {user.phone || "—"}
-      </td>
+      <td className="px-6 py-4 text-slate-600">{user.phone || "—"}</td>
 
       {/* =========================
           LOCATION
       ========================= */}
-      <td className="px-6 py-4 text-slate-600">
-        {location || "—"}
-      </td>
+      <td className="px-6 py-4 text-slate-600">{location || "—"}</td>
 
       {/* =========================
           ISSUES
       ========================= */}
       <td className="px-6 py-4">
         <span className="rounded-lg bg-slate-100 px-2 py-1 text-sm font-bold text-slate-700">
-          0
+          {user.issueCount || 0}
         </span>
 
-        <span className="ml-2 text-xs text-slate-400">
-          reported
-        </span>
+        <span className="ml-2 text-xs text-slate-400">reported</span>
       </td>
 
       {/* =========================
           JOINED
       ========================= */}
-      <td className="px-6 py-4 text-sm text-slate-500">
-        {joined}
-      </td>
+      <td className="px-6 py-4 text-sm text-slate-500">{joined}</td>
 
       {/* =========================
           STATUS
@@ -225,9 +198,7 @@ function UserRow({ user, index }) {
       {/* =========================
           MENU
       ========================= */}
-      <td className="px-6 py-4 text-right text-slate-400">
-        •••
-      </td>
+      <td className="px-6 py-4 text-right text-slate-400">•••</td>
     </tr>
   );
 }
@@ -240,19 +211,16 @@ export default function Users() {
 
   const [query, setQuery] = useState("");
 
-  const [status, setStatus] =
-    useState("All users");
+  const [status, setStatus] = useState("All users");
 
-  const [currentPage, setCurrentPage] =
-    useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
 
   // ==========================================
-  // FETCH USERS
+  // FETCH USERS + PROBLEMS
   // ==========================================
   useEffect(() => {
     const fetchUsers = async () => {
@@ -260,36 +228,77 @@ export default function Users() {
         setLoading(true);
         setError("");
 
-        const backendUrl =
-          import.meta.env.VITE_BACKEND_URL;
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
         if (!backendUrl) {
-          throw new Error(
-            "VITE_BACKEND_URL is not configured"
-          );
+          throw new Error("VITE_BACKEND_URL is not configured");
         }
 
-        const response = await axios.get(
-          `${backendUrl}/api/admin/users`
-        );
+        // ======================================
+        // USERS API + PROBLEMS API
+        // ======================================
+        const [usersResponse, problemsResponse] = await Promise.all([
+          axios.get(`${backendUrl}/api/admin/users`),
+          axios.get(`${backendUrl}/api/admin/problems`),
+        ]);
 
-        if (response.data?.success) {
-          setUsers(
-            Array.isArray(response.data.users)
-              ? response.data.users
-              : []
-          );
-        } else {
-          setError(
-            response.data?.message ||
-              "Failed to load users"
-          );
+        // ======================================
+        // CHECK USERS RESPONSE
+        // ======================================
+        if (!usersResponse.data?.success) {
+          setError(usersResponse.data?.message || "Failed to load users");
+          return;
         }
+
+        // ======================================
+        // USERS DATA
+        // ======================================
+        const usersData = Array.isArray(usersResponse.data?.users)
+          ? usersResponse.data.users
+          : [];
+
+        // ======================================
+        // PROBLEMS DATA
+        // ======================================
+        const problemsData =
+          problemsResponse.data?.success &&
+          Array.isArray(problemsResponse.data?.problems)
+            ? problemsResponse.data.problems
+            : [];
+
+        // ======================================
+        // ADD ISSUE COUNT TO EVERY USER
+        // ======================================
+        const usersWithIssueCount = usersData.map((user) => {
+          const userId = user._id?.toString();
+
+          const issueCount = problemsData.filter((problem) => {
+            const createdBy = problem.createdBy;
+
+            // createdBy populated object ho
+            // ya direct ObjectId/string ho
+            const createdById =
+              typeof createdBy === "object" && createdBy !== null
+                ? (createdBy._id || createdBy.id)?.toString()
+                : createdBy?.toString();
+
+            return createdById === userId;
+          }).length;
+
+          return {
+            ...user,
+            issueCount,
+          };
+        });
+
+        // ======================================
+        // SET USERS
+        // ======================================
+        setUsers(usersWithIssueCount);
       } catch (error) {
         console.error(
           "Fetch users error:",
-          error.response?.data ||
-            error.message
+          error.response?.data || error.message
         );
 
         setError(
@@ -321,23 +330,13 @@ export default function Users() {
         .join(" ")
         .toLowerCase();
 
-      const matchesQuery =
-        searchableText.includes(
-          query.toLowerCase()
-        );
+      const matchesQuery = searchableText.includes(query.toLowerCase());
 
-      // Abhi database me Active/Review/Inactive
-      // status field nahi hai.
-      // Isliye completed users ko Active maan rahe hain.
       const userStatus = "Active";
 
-      const matchesStatus =
-        status === "All users" ||
-        userStatus === status;
+      const matchesStatus = status === "All users" || userStatus === status;
 
-      return (
-        matchesQuery && matchesStatus
-      );
+      return matchesQuery && matchesStatus;
     });
   }, [users, query, status]);
 
@@ -399,9 +398,7 @@ export default function Users() {
             Loading users...
           </div>
 
-          <p className="mt-2 text-sm text-slate-400">
-            Please wait
-          </p>
+          <p className="mt-2 text-sm text-slate-400">Please wait</p>
         </div>
       </div>
     );
@@ -418,9 +415,7 @@ export default function Users() {
             Failed to load users
           </h2>
 
-          <p className="mt-2 text-sm text-rose-600">
-            {error}
-          </p>
+          <p className="mt-2 text-sm text-rose-600">{error}</p>
         </div>
       </div>
     );
@@ -429,10 +424,6 @@ export default function Users() {
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gradient-to-br from-slate-50 via-brand-50/40 to-analytics-50 px-4 py-8 md:px-8 lg:px-12">
       <div className="mx-auto max-w-[1600px]">
-
-        {/* ======================================
-            HEADER
-        ====================================== */}
         <div className="animate-fade-in-up flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -448,9 +439,8 @@ export default function Users() {
             </h2>
 
             <p className="mt-2 max-w-md text-sm text-slate-500">
-              Manage citizens, track participation,
-              and monitor profile quality across all
-              wards.
+              Manage citizens, track participation, and monitor profile quality
+              across all wards.
             </p>
           </div>
 
@@ -471,40 +461,22 @@ export default function Users() {
           </div>
         </div>
 
-        {/* ======================================
-            METRICS
-        ======================================
-        */}
         <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric, index) => (
-            <MetricCard
-              key={metric.label}
-              metric={metric}
-              index={index}
-            />
+            <MetricCard key={metric.label} metric={metric} index={index} />
           ))}
         </section>
 
-        {/* ======================================
-            DIRECTORY
-        ======================================
-        */}
         <section className="animate-fade-in-up stagger-5 mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/50">
-
-          {/* ====================================
-              SEARCH HEADER
-          ==================================== */}
           <div className="border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50 p-6 md:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
-
               <div>
                 <h3 className="text-xl font-bold text-slate-900">
                   Citizen Directory
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Search, filter and review all
-                  registered users.
+                  Search, filter and review all registered users.
                 </p>
               </div>
 
@@ -514,8 +486,6 @@ export default function Users() {
             </div>
 
             <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
-
-              {/* SEARCH */}
               <div className="relative flex-1">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                   ⌕
@@ -524,9 +494,7 @@ export default function Users() {
                 <input
                   value={query}
                   onChange={(event) => {
-                    setQuery(
-                      event.target.value
-                    );
+                    setQuery(event.target.value);
                     setCurrentPage(1);
                   }}
                   placeholder="Search by name, mobile number or ward..."
@@ -537,9 +505,7 @@ export default function Users() {
                   <button
                     type="button"
                     aria-label="Clear search"
-                    onClick={() =>
-                      setQuery("")
-                    }
+                    onClick={() => setQuery("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100"
                   >
                     ×
@@ -547,14 +513,8 @@ export default function Users() {
                 )}
               </div>
 
-              {/* FILTER */}
               <div className="flex gap-2 overflow-x-auto">
-                {[
-                  "All users",
-                  "Active",
-                  "Review",
-                  "Inactive",
-                ].map((item) => (
+                {["All users", "Active", "Review", "Inactive"].map((item) => (
                   <button
                     key={item}
                     type="button"
@@ -575,12 +535,8 @@ export default function Users() {
             </div>
           </div>
 
-          {/* ====================================
-              TABLE
-          ==================================== */}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
-
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80">
                   {[
@@ -603,21 +559,12 @@ export default function Users() {
               </thead>
 
               <tbody>
-                {filteredUsers.map(
-                  (user, index) => (
-                    <UserRow
-                      key={user._id}
-                      user={user}
-                      index={index}
-                    />
-                  )
-                )}
+                {filteredUsers.map((user, index) => (
+                  <UserRow key={user._id} user={user} index={index} />
+                ))}
               </tbody>
             </table>
 
-            {/* ==================================
-                NO USERS
-            ================================== */}
             {filteredUsers.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16">
                 <span className="grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-3xl text-slate-400">
@@ -629,8 +576,7 @@ export default function Users() {
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Try adjusting your search or
-                  filter criteria
+                  Try adjusting your search or filter criteria
                 </p>
 
                 <button
@@ -644,26 +590,14 @@ export default function Users() {
             )}
           </div>
 
-          {/* ====================================
-              PAGINATION
-          ==================================== */}
           {filteredUsers.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
-
               <span className="text-xs text-slate-500">
-                Showing{" "}
-                <b className="text-slate-700">
-                  {filteredUsers.length}
-                </b>{" "}
-                of{" "}
-                <b className="text-slate-700">
-                  {users.length}
-                </b>{" "}
-                users
+                Showing <b className="text-slate-700">{filteredUsers.length}</b>{" "}
+                of <b className="text-slate-700">{users.length}</b> users
               </span>
 
               <div className="flex items-center gap-1">
-
                 <button
                   type="button"
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500"
@@ -671,24 +605,20 @@ export default function Users() {
                   ‹
                 </button>
 
-                {[1, 2, 3, 4, 5].map(
-                  (page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() =>
-                        setCurrentPage(page)
-                      }
-                      className={`rounded-lg px-3.5 py-2 text-xs font-semibold ${
-                        currentPage === page
-                          ? "bg-gradient-to-r from-brand-700 to-brand-500 text-white shadow-lg"
-                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
+                {[1, 2, 3, 4, 5].map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`rounded-lg px-3.5 py-2 text-xs font-semibold ${
+                      currentPage === page
+                        ? "bg-gradient-to-r from-brand-700 to-brand-500 text-white shadow-lg"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
 
                 <button
                   type="button"
@@ -696,7 +626,6 @@ export default function Users() {
                 >
                   ›
                 </button>
-
               </div>
             </div>
           )}

@@ -1,2 +1,220 @@
-import PageFrame, { Panel, Stat } from '../components/PageFrame'
-export default function Issues() { return <PageFrame title="Issues" description="Track every public issue from registration to resolution." action="＋ Register issue"><div className="grid gap-4 sm:grid-cols-3"><Stat label="Total issues" value="8,421" change="+18.4%" /><Stat label="Pending" value="2,500" change="−4.7%" /><Stat label="Resolved" value="5,921" /></div><Panel title="Issue queue" subtitle="Prioritise and assign work"><div className="flex flex-wrap gap-2"><button className="rounded-lg bg-[#e5f4f0] px-3 py-2 text-xs font-bold text-[#08776d]">All issues</button><button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Critical</button><button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Pending &gt; 7 days</button><button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Missing data</button></div><div className="mt-5 space-y-3">{[['#10821','Road damage','Ward 07 · Bhagalpur','High','In progress'],['#10820','Drinking water','Ward 12 · Nathnagar','Critical','Pending'],['#10819','Street lighting','Ward 03 · Sabour','Medium','Resolved']].map(row => <div key={row[0]} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 p-4"><span className="text-xs font-bold text-slate-400">{row[0]}</span><span className="min-w-32 flex-1 font-semibold">{row[1]}<small className="ml-2 font-normal text-slate-400">{row[2]}</small></span><span className="rounded-full bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-700">{row[3]}</span><span className="text-xs text-slate-500">{row[4]}</span><span className="text-slate-300">›</span></div>)}</div></Panel></PageFrame> }
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+import PageFrame, { Panel, Stat } from "../components/PageFrame";
+
+export default function Issues() {
+  // ==========================================
+  // STATE
+  // ==========================================
+
+  const [issues, setIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // ==========================================
+  // FETCH ISSUES FROM BACKEND
+  // GET /api/admin/problems
+  // ==========================================
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+        if (!backendUrl) {
+          setError("Backend URL is not configured.");
+          return;
+        }
+
+        const response = await axios.get(`${backendUrl}/api/admin/problems`, {
+          withCredentials: true,
+        });
+
+        if (response.data?.success) {
+          setIssues(response.data.problems || []);
+        } else {
+          setError(response.data?.message || "Failed to load issues.");
+        }
+      } catch (error) {
+        console.error(
+          "Admin issues fetch error:",
+          error.response?.data || error.message
+        );
+
+        setError(error.response?.data?.message || "Failed to load issues.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIssues();
+  }, []);
+
+  // ==========================================
+  // REAL ISSUE COUNTS
+  // ==========================================
+
+  const totalIssues = issues.length;
+
+  const pendingIssues = issues.filter(
+    (issue) => String(issue.status || "").toLowerCase() === "pending"
+  ).length;
+
+  const resolvedIssues = issues.filter(
+    (issue) => String(issue.status || "").toLowerCase() === "resolved"
+  ).length;
+
+  // ==========================================
+  // UI
+  // ==========================================
+
+  return (
+    <PageFrame
+      title="Issues"
+      description="Track every public issue from registration to resolution."
+      action="＋ Register issue"
+    >
+      {/* ======================================
+          ISSUE STATS
+      ====================================== */}
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Total issues" value={totalIssues} change="" />
+
+        <Stat label="Pending" value={pendingIssues} change="" />
+
+        <Stat label="Resolved" value={resolvedIssues} />
+      </div>
+
+      {/* ======================================
+          ISSUE QUEUE
+      ====================================== */}
+
+      <Panel title="Issue queue" subtitle="Prioritise and assign work">
+        {/* ====================================
+            FILTER BUTTONS
+        ==================================== */}
+
+        <div className="flex flex-wrap gap-2">
+          <button className="rounded-lg bg-[#e5f4f0] px-3 py-2 text-xs font-bold text-[#08776d]">
+            All issues
+          </button>
+
+          <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">
+            Critical
+          </button>
+
+          <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">
+            Pending &gt; 7 days
+          </button>
+
+          <button className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">
+            Missing data
+          </button>
+        </div>
+
+        {/* ====================================
+            LOADING
+        ==================================== */}
+
+        {loading && (
+          <div className="mt-5 text-sm text-slate-500">Loading issues...</div>
+        )}
+
+        {/* ====================================
+            ERROR
+        ==================================== */}
+
+        {error && <div className="mt-5 text-sm text-red-600">{error}</div>}
+
+        {/* ====================================
+            NO ISSUES
+        ==================================== */}
+
+        {!loading && !error && issues.length === 0 && (
+          <div className="mt-5 text-sm text-slate-500">No issues found.</div>
+        )}
+
+        {/* ====================================
+            ISSUES FROM BACKEND
+        ==================================== */}
+
+        {!loading && !error && issues.length > 0 && (
+          <div className="mt-5 space-y-3">
+            {issues.map((issue, index) => (
+              <div
+                key={issue._id || issue.id || index}
+                className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 p-4"
+              >
+                {/* =========================
+                        ISSUE ID
+                    ========================= */}
+
+                <span className="text-xs font-bold text-slate-400">
+                  #{issue._id ? issue._id.slice(-6) : index + 1}
+                </span>
+
+                {/* =========================
+                        TITLE + LOCATION +
+                        DESCRIPTION
+                    ========================= */}
+
+                <div className="min-w-32 flex-1">
+                  {/* TITLE */}
+
+                  <div className="font-semibold">
+                    {issue.category || issue.title || "Unknown issue"}
+
+                    {/* LOCATION */}
+
+                    <small className="ml-2 font-normal text-slate-400">
+                      {issue.ward ? `Ward ${issue.ward}` : ""}
+
+                      {issue.district ? ` · ${issue.district}` : ""}
+                    </small>
+                  </div>
+
+                  {/* DESCRIPTION */}
+
+                  <p className="mt-1 text-xs font-normal leading-5 text-slate-500">
+                    {issue.description ||
+                      issue.problemDescription ||
+                      issue.details ||
+                      issue.problemDetails ||
+                      "No description provided"}
+                  </p>
+                </div>
+
+                {/* =========================
+                        PRIORITY
+                    ========================= */}
+
+                <span className="rounded-full bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-700">
+                  {issue.priority || "Normal"}
+                </span>
+
+                {/* =========================
+                        STATUS
+                    ========================= */}
+
+                <span className="text-xs text-slate-500">
+                  {issue.status || "Pending"}
+                </span>
+
+                {/* =========================
+                        ARROW
+                    ========================= */}
+
+                <span className="text-slate-300">›</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </PageFrame>
+  );
+}
