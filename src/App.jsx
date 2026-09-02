@@ -3,6 +3,7 @@ import AdminLayout from './components/AdminLayout'
 import Dashboard from './pages/Dashboard'
 import Users from './pages/Users'
 import Issues from './pages/Issues'
+import IssueDetails from './pages/IssueDetails'
 import Geography from './pages/Geography'
 import Analytics from './pages/Analytics'
 import Calendar from './pages/Calendar'
@@ -19,6 +20,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="issues" element={<Issues />} />
+            <Route path="/issues/:id" element={<IssueDetails />} />
             <Route path="geography" element={<Geography />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="calendar" element={<Calendar />} />

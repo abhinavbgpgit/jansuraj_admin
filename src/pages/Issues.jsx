@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 import PageFrame, { Panel, Stat } from "../components/PageFrame";
@@ -30,14 +31,19 @@ export default function Issues() {
           return;
         }
 
-        const response = await axios.get(`${backendUrl}/api/admin/problems`, {
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          `${backendUrl}/api/admin/problems`,
+          {
+            withCredentials: true,
+          }
+        );
 
         if (response.data?.success) {
           setIssues(response.data.problems || []);
         } else {
-          setError(response.data?.message || "Failed to load issues.");
+          setError(
+            response.data?.message || "Failed to load issues."
+          );
         }
       } catch (error) {
         console.error(
@@ -45,7 +51,10 @@ export default function Issues() {
           error.response?.data || error.message
         );
 
-        setError(error.response?.data?.message || "Failed to load issues.");
+        setError(
+          error.response?.data?.message ||
+            "Failed to load issues."
+        );
       } finally {
         setLoading(false);
       }
@@ -61,12 +70,31 @@ export default function Issues() {
   const totalIssues = issues.length;
 
   const pendingIssues = issues.filter(
-    (issue) => String(issue.status || "").toLowerCase() === "pending"
+    (issue) =>
+      String(issue.status || "").toLowerCase() === "pending"
   ).length;
 
   const resolvedIssues = issues.filter(
-    (issue) => String(issue.status || "").toLowerCase() === "resolved"
+    (issue) =>
+      String(issue.status || "").toLowerCase() === "resolved"
   ).length;
+
+  // ==========================================
+  // FORMAT ISSUE DATE & TIME
+  // ==========================================
+
+  const formatIssueDateTime = (date) => {
+    if (!date) return "Date not available";
+
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   // ==========================================
   // UI
@@ -83,18 +111,32 @@ export default function Issues() {
       ====================================== */}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Total issues" value={totalIssues} change="" />
+        <Stat
+          label="Total issues"
+          value={totalIssues}
+          change=""
+        />
 
-        <Stat label="Pending" value={pendingIssues} change="" />
+        <Stat
+          label="Pending"
+          value={pendingIssues}
+          change=""
+        />
 
-        <Stat label="Resolved" value={resolvedIssues} />
+        <Stat
+          label="Resolved"
+          value={resolvedIssues}
+        />
       </div>
 
       {/* ======================================
           ISSUE QUEUE
       ====================================== */}
 
-      <Panel title="Issue queue" subtitle="Prioritise and assign work">
+      <Panel
+        title="Issue queue"
+        subtitle="Prioritise and assign work"
+      >
         {/* ====================================
             FILTER BUTTONS
         ==================================== */}
@@ -122,21 +164,29 @@ export default function Issues() {
         ==================================== */}
 
         {loading && (
-          <div className="mt-5 text-sm text-slate-500">Loading issues...</div>
+          <div className="mt-5 text-sm text-slate-500">
+            Loading issues...
+          </div>
         )}
 
         {/* ====================================
             ERROR
         ==================================== */}
 
-        {error && <div className="mt-5 text-sm text-red-600">{error}</div>}
+        {error && (
+          <div className="mt-5 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
         {/* ====================================
             NO ISSUES
         ==================================== */}
 
         {!loading && !error && issues.length === 0 && (
-          <div className="mt-5 text-sm text-slate-500">No issues found.</div>
+          <div className="mt-5 text-sm text-slate-500">
+            No issues found.
+          </div>
         )}
 
         {/* ====================================
@@ -151,30 +201,39 @@ export default function Issues() {
                 className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 p-4"
               >
                 {/* =========================
-                        ISSUE ID
-                    ========================= */}
+                    ISSUE ID
+                ========================= */}
 
                 <span className="text-xs font-bold text-slate-400">
-                  #{issue._id ? issue._id.slice(-6) : index + 1}
+                  #
+                  {issue._id
+                    ? issue._id.slice(-6)
+                    : index + 1}
                 </span>
 
                 {/* =========================
-                        TITLE + LOCATION +
-                        DESCRIPTION
-                    ========================= */}
+                    TITLE + LOCATION +
+                    DESCRIPTION
+                ========================= */}
 
                 <div className="min-w-32 flex-1">
                   {/* TITLE */}
 
                   <div className="font-semibold">
-                    {issue.category || issue.title || "Unknown issue"}
+                    {issue.category ||
+                      issue.title ||
+                      "Unknown issue"}
 
                     {/* LOCATION */}
 
                     <small className="ml-2 font-normal text-slate-400">
-                      {issue.ward ? `Ward ${issue.ward}` : ""}
+                      {issue.ward
+                        ? `Ward ${issue.ward}`
+                        : ""}
 
-                      {issue.district ? ` · ${issue.district}` : ""}
+                      {issue.district
+                        ? ` · ${issue.district}`
+                        : ""}
                     </small>
                   </div>
 
@@ -187,29 +246,51 @@ export default function Issues() {
                       issue.problemDetails ||
                       "No description provided"}
                   </p>
+
+                  {/* ISSUE DATE & TIME */}
+
+                  <p className="mt-2 text-xs text-slate-400">
+                    Reported on{" "}
+                    {formatIssueDateTime(
+                      issue.createdAt
+                    )}
+                  </p>
                 </div>
 
                 {/* =========================
-                        PRIORITY
-                    ========================= */}
+                    PRIORITY
+                ========================= */}
 
                 <span className="rounded-full bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-700">
                   {issue.priority || "Normal"}
                 </span>
 
                 {/* =========================
-                        STATUS
-                    ========================= */}
+                    STATUS
+                ========================= */}
 
                 <span className="text-xs text-slate-500">
                   {issue.status || "Pending"}
                 </span>
 
                 {/* =========================
-                        ARROW
-                    ========================= */}
+                    VIEW DETAILS BUTTON
+                ========================= */}
 
-                <span className="text-slate-300">›</span>
+                <Link
+                  to={`/issues/${issue._id || issue.id}`}
+                  className="rounded-lg bg-[#0b766d] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#095f58]"
+                >
+                  View Details
+                </Link>
+
+                {/* =========================
+                    ARROW
+                ========================= */}
+
+                <span className="text-slate-300">
+                  ›
+                </span>
               </div>
             ))}
           </div>
