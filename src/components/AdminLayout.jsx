@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
-const navigation = [
-  ['Overview', '/', '⌂'], ['Users', '/users', '♙'], ['Issues', '/issues', '▤'],
-  ['Geography', '/geography', '⌖'], ['Analytics', '/analytics', '◒'], ['Calendar', '/calendar', '▣'],
-  ['Alerts', '/alerts', '⚠'], ['Reports', '/reports', '▥'],
+const navigation =  [
+  ['Overview', '/admin', '⌂'],
+  ['Users', '/admin/users', '♙'],
+  ['Issues', '/admin/issues', '▤'],
+  ['Geography', '/admin/geography', '⌖'],
+  ['Analytics', '/admin/analytics', '◒'],
+  ['Calendar', '/admin/calendar', '▣'],
+  ['Alerts', '/admin/alerts', '⚠'],
+  ['Reports', '/admin/reports', '▥'],
 ]
 
 export default function AdminLayout() {
