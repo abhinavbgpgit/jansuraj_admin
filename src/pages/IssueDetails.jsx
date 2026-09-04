@@ -21,8 +21,12 @@ export default function IssueDetails() {
   const [error, setError] = useState("");
 
   // ==========================================
-  // FETCH SINGLE ISSUE
-  // GET /api/admin/problems/:id
+  // FETCH WARD HEAD ISSUES
+  //
+  // GET /api/ward-head/dashboard
+  //
+  // Backend automatically returns only issues
+  // from logged-in Ward Head's own location.
   // ==========================================
 
   useEffect(() => {
@@ -38,34 +42,91 @@ export default function IssueDetails() {
           return;
         }
 
+        // ======================================
+        // WARD HEAD DASHBOARD API
+        // ======================================
+
         const response = await axios.get(
-          `${backendUrl}/api/admin/problems/${id}`,
+          `${backendUrl}/api/ward-head/dashboard`,
           {
             withCredentials: true,
           }
         );
 
-        if (response.data?.success) {
-          setIssue(response.data.problem || null);
+        // ======================================
+        // CHECK RESPONSE
+        // ======================================
 
-          setReporter(
-            response.data.reporter ||
-              response.data.problem?.createdBy ||
-              null
-          );
-        } else {
+        if (!response.data?.success) {
+          setError(response.data?.message || "Failed to load issue details.");
+
+          return;
+        }
+
+        // ======================================
+        // GET ONLY WARD HEAD'S ISSUES
+        // ======================================
+
+        const wardIssues = Array.isArray(response.data?.recentIssues)
+          ? response.data.recentIssues
+          : [];
+
+        // ======================================
+        // FIND ISSUE FROM URL ID
+        //
+        // This issue is already filtered by
+        // backend according to Ward Head's ward.
+        // ======================================
+
+        const selectedIssue = wardIssues.find(
+          (item) => String(item._id || item.id) === String(id)
+        );
+
+        // ======================================
+        // ISSUE NOT FOUND
+        // ======================================
+
+        if (!selectedIssue) {
+          setIssue(null);
+
+          setReporter(null);
+
           setError(
-            response.data?.message || "Failed to load issue details."
+            "Issue not found or this issue does not belong to your assigned ward."
           );
+
+          return;
+        }
+
+        // ======================================
+        // SET ISSUE
+        // ======================================
+
+        setIssue(selectedIssue);
+
+        // ======================================
+        // SET REPORTER
+        //
+        // createdBy is populated by backend
+        // in Ward Head Dashboard Controller.
+        // ======================================
+
+        const createdBy = selectedIssue.createdBy;
+
+        if (createdBy && typeof createdBy === "object") {
+          setReporter(createdBy);
+        } else {
+          setReporter(null);
         }
       } catch (error) {
         console.error(
-          "Issue details fetch error:",
+          "Ward Head issue details fetch error:",
           error.response?.data || error.message
         );
 
         setError(
           error.response?.data?.message ||
+            error.message ||
             "Failed to load issue details."
         );
       } finally {
@@ -75,6 +136,10 @@ export default function IssueDetails() {
 
     if (id) {
       fetchIssueDetails();
+    } else {
+      setLoading(false);
+
+      setError("Issue ID is missing.");
     }
   }, [id]);
 
@@ -106,13 +171,17 @@ export default function IssueDetails() {
       return "Not available";
     }
 
-    // Direct name field
+    // ========================================
+    // DIRECT NAME
+    // ========================================
 
-    if (reporter.name && reporter.name.trim()) {
-      return reporter.name.trim();
+    if (reporter.name && String(reporter.name).trim()) {
+      return String(reporter.name).trim();
     }
 
-    // First + Middle + Last Name
+    // ========================================
+    // FIRST + MIDDLE + LAST NAME
+    // ========================================
 
     const fullName = [
       reporter.firstName,
@@ -167,33 +236,6 @@ export default function IssueDetails() {
   };
 
   // ==========================================
-  // CREATE ALL REPORT TABS
-  // CURRENT REPORT + OTHER REPORTS
-  // ==========================================
-
-  const allReporterReports = issue
-    ? [
-        {
-          _id: issue._id,
-          category: issue.category,
-          status: issue.status,
-          createdAt: issue.createdAt,
-          isCurrent: true,
-        },
-        ...(Array.isArray(reporter?.otherReports)
-          ? reporter.otherReports.map((report) => ({
-              ...report,
-              isCurrent: false,
-            }))
-          : []),
-      ].sort(
-        (a, b) =>
-          new Date(b.createdAt || 0) -
-          new Date(a.createdAt || 0)
-      )
-    : [];
-
-  // ==========================================
   // LOADING
   // ==========================================
 
@@ -226,9 +268,7 @@ export default function IssueDetails() {
       >
         <Panel>
           <div className="py-6 text-center">
-            <p className="text-sm text-red-600">
-              {error}
-            </p>
+            <p className="text-sm text-red-600">{error}</p>
 
             <Link
               to="/issues"
@@ -255,9 +295,7 @@ export default function IssueDetails() {
       >
         <Panel>
           <div className="py-10 text-center">
-            <p className="text-sm text-slate-500">
-              Issue not found.
-            </p>
+            <p className="text-sm text-slate-500">Issue not found.</p>
 
             <Link
               to="/issues"
@@ -295,68 +333,6 @@ export default function IssueDetails() {
       </div>
 
       {/* ======================================
-          REPORT TABS
-      ====================================== */}
-
-      {allReporterReports.length > 1 && (
-        <div className="mb-6">
-          <Panel
-            title={`${getReporterName(reporter)}'s Reports`}
-            subtitle={`${allReporterReports.length} total issues reported by this user`}
-          >
-            <div className="overflow-x-auto">
-              <div className="flex min-w-max gap-2 pb-1">
-                {allReporterReports.map((report, index) => {
-                  const isActive =
-                    String(report._id) === String(issue._id);
-
-                  return (
-                    <Link
-                      key={report._id || index}
-                      to={`/issues/${report._id}`}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                        isActive
-                          ? "bg-[#0b766d] text-white shadow-sm"
-                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      }`}
-                    >
-                      Report {index + 1}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* CURRENT REPORT INFO */}
-
-            <div className="mt-4 rounded-lg bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">
-                Currently viewing
-              </p>
-
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {issue.category || "Issue"}
-              </p>
-
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full px-2 py-1 text-xs font-semibold ${getStatusClass(
-                    issue.status
-                  )}`}
-                >
-                  {getStatusText(issue.status)}
-                </span>
-
-                <span className="text-xs text-slate-400">
-                  {formatDateTime(issue.createdAt)}
-                </span>
-              </div>
-            </div>
-          </Panel>
-        </div>
-      )}
-
-      {/* ======================================
           ISSUE DETAILS
       ====================================== */}
 
@@ -365,13 +341,11 @@ export default function IssueDetails() {
         subtitle="Complete information about this reported issue"
       >
         <div className="grid gap-6 lg:grid-cols-2">
-
           {/* ==================================
               LEFT SIDE
           ================================== */}
 
           <div className="space-y-5">
-
             {/* ISSUE ID */}
 
             <div>
@@ -380,7 +354,7 @@ export default function IssueDetails() {
               </p>
 
               <p className="mt-1 break-all text-sm font-semibold text-slate-800">
-                #{issue._id}
+                #{issue._id || issue.id || "Not available"}
               </p>
             </div>
 
@@ -402,15 +376,13 @@ export default function IssueDetails() {
 
             {/* ADDRESS */}
 
-            {issue.address && issue.address.trim() && (
+            {issue.address && String(issue.address).trim() && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Address
                 </p>
 
-                <p className="mt-2 text-sm text-slate-700">
-                  {issue.address}
-                </p>
+                <p className="mt-2 text-sm text-slate-700">{issue.address}</p>
               </div>
             )}
           </div>
@@ -420,7 +392,6 @@ export default function IssueDetails() {
           ================================== */}
 
           <div className="space-y-5 rounded-xl border border-slate-100 bg-slate-50 p-5">
-
             {/* STATUS */}
 
             <div>
@@ -487,7 +458,6 @@ export default function IssueDetails() {
         >
           {reporter && typeof reporter === "object" ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-
               {/* REPORTER NAME */}
 
               <div>
@@ -513,20 +483,6 @@ export default function IssueDetails() {
                   </p>
                 </div>
               )}
-
-              {/* TOTAL ISSUES */}
-
-              <div>
-                <p className="text-xs font-semibold text-slate-400">
-                  Total Issues Reported
-                </p>
-
-                <p className="mt-1 text-base font-semibold text-slate-700">
-                  {reporter.totalReports ||
-                    issue.reporterTotalIssues ||
-                    1}
-                </p>
-              </div>
 
               {/* REPORTER DISTRICT */}
 
@@ -574,9 +530,7 @@ export default function IssueDetails() {
 
               {reporter.block && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-400">
-                    Block
-                  </p>
+                  <p className="text-xs font-semibold text-slate-400">Block</p>
 
                   <p className="mt-1 font-semibold text-slate-700">
                     {reporter.block}
@@ -602,9 +556,7 @@ export default function IssueDetails() {
 
               {reporter.ward && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-400">
-                    Ward
-                  </p>
+                  <p className="text-xs font-semibold text-slate-400">Ward</p>
 
                   <p className="mt-1 font-semibold text-slate-700">
                     {reporter.ward}
@@ -625,19 +577,13 @@ export default function IssueDetails() {
       ====================================== */}
 
       <div className="mt-6">
-        <Panel
-          title="Location Details"
-          subtitle="Reported issue location"
-        >
+        <Panel title="Location Details" subtitle="Reported issue location">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
             {/* DISTRICT */}
 
             {issue.district && (
               <div>
-                <p className="text-xs font-semibold text-slate-400">
-                  District
-                </p>
+                <p className="text-xs font-semibold text-slate-400">District</p>
 
                 <p className="mt-1 font-semibold text-slate-700">
                   {issue.district}
@@ -663,9 +609,7 @@ export default function IssueDetails() {
 
             {issue.ward && (
               <div>
-                <p className="text-xs font-semibold text-slate-400">
-                  Ward
-                </p>
+                <p className="text-xs font-semibold text-slate-400">Ward</p>
 
                 <p className="mt-1 font-semibold text-slate-700">
                   {issue.ward}
@@ -691,9 +635,7 @@ export default function IssueDetails() {
 
             {issue.block && (
               <div>
-                <p className="text-xs font-semibold text-slate-400">
-                  Block
-                </p>
+                <p className="text-xs font-semibold text-slate-400">Block</p>
 
                 <p className="mt-1 font-semibold text-slate-700">
                   {issue.block}
@@ -730,16 +672,14 @@ export default function IssueDetails() {
               subtitle="Photos uploaded with this report"
             >
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {issue.photos
-                  .filter(Boolean)
-                  .map((photo, index) => (
-                    <img
-                      key={index}
-                      src={photo}
-                      alt={`Issue ${index + 1}`}
-                      className="h-48 w-full rounded-xl object-cover"
-                    />
-                  ))}
+                {issue.photos.filter(Boolean).map((photo, index) => (
+                  <img
+                    key={index}
+                    src={photo}
+                    alt={`Issue ${index + 1}`}
+                    className="h-48 w-full rounded-xl object-cover"
+                  />
+                ))}
               </div>
             </Panel>
           </div>
@@ -757,18 +697,12 @@ export default function IssueDetails() {
               subtitle="Videos uploaded with this report"
             >
               <div className="space-y-4">
-                {issue.videoLinks
-                  .filter(Boolean)
-                  .map((video, index) => (
-                    <video
-                      key={index}
-                      controls
-                      className="w-full rounded-xl"
-                    >
-                      <source src={video} />
-                      Your browser does not support video playback.
-                    </video>
-                  ))}
+                {issue.videoLinks.filter(Boolean).map((video, index) => (
+                  <video key={index} controls className="w-full rounded-xl">
+                    <source src={video} />
+                    Your browser does not support video playback.
+                  </video>
+                ))}
               </div>
             </Panel>
           </div>

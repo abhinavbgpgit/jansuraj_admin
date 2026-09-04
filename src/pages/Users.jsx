@@ -104,8 +104,15 @@ function MetricCard({ metric, index }) {
 // USER ROW
 // ==========================================
 function UserRow({ user, index }) {
+  const fullName =
+    user.name ||
+    [user.firstName, user.middleName, user.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    "Unknown User";
+
   const initials =
-    user.name
+    fullName
       ?.split(" ")
       .filter(Boolean)
       .map((word) => word[0])
@@ -113,23 +120,32 @@ function UserRow({ user, index }) {
       .slice(0, 2)
       .toUpperCase() || "U";
 
-  const location = [user.ward, user.localBody, user.district]
-    .filter(Boolean)
-    .join(", ");
+  // ==========================================
+  // LOCATION
+  // ==========================================
 
- const joined = user.createdAt
-  ? new Date(user.createdAt).toLocaleString(
-      "en-IN",
-      {
+  const location =
+    user.areaType === "rural"
+      ? [user.ward, user.panchayat, user.block, user.district]
+          .filter(Boolean)
+          .join(", ")
+      : [user.ward, user.localBody, user.district].filter(Boolean).join(", ");
+
+  // ==========================================
+  // JOIN DATE + TIME
+  // ==========================================
+
+  const joined = user.createdAt
+    ? new Date(user.createdAt).toLocaleString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
-      }
-    )
-  : "-";
+      })
+    : "-";
+
   return (
     <tr
       className="animate-fade-in border-b border-slate-50 opacity-0 transition hover:bg-brand-50/50"
@@ -141,6 +157,7 @@ function UserRow({ user, index }) {
       {/* =========================
           CITIZEN
       ========================= */}
+
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-gradient-to-br from-brand-600 to-analytics-600 p-0.5">
@@ -148,7 +165,7 @@ function UserRow({ user, index }) {
               {user.photo ? (
                 <img
                   src={user.photo}
-                  alt={user.name || "User"}
+                  alt={fullName}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -158,9 +175,7 @@ function UserRow({ user, index }) {
           </div>
 
           <div>
-            <p className="font-semibold text-slate-800">
-              {user.name || "Unknown User"}
-            </p>
+            <p className="font-semibold text-slate-800">{fullName}</p>
 
             <p className="text-xs text-slate-400">ID: {user._id}</p>
           </div>
@@ -170,16 +185,19 @@ function UserRow({ user, index }) {
       {/* =========================
           CONTACT
       ========================= */}
+
       <td className="px-6 py-4 text-slate-600">{user.phone || "—"}</td>
 
       {/* =========================
           LOCATION
       ========================= */}
+
       <td className="px-6 py-4 text-slate-600">{location || "—"}</td>
 
       {/* =========================
           ISSUES
       ========================= */}
+
       <td className="px-6 py-4">
         <span className="rounded-lg bg-slate-100 px-2 py-1 text-sm font-bold text-slate-700">
           {user.issueCount || 0}
@@ -191,11 +209,13 @@ function UserRow({ user, index }) {
       {/* =========================
           JOINED
       ========================= */}
+
       <td className="px-6 py-4 text-sm text-slate-500">{joined}</td>
 
       {/* =========================
           STATUS
       ========================= */}
+
       <td className="px-6 py-4">
         <StatusBadge status="Active" />
       </td>
@@ -203,6 +223,7 @@ function UserRow({ user, index }) {
       {/* =========================
           MENU
       ========================= */}
+
       <td className="px-6 py-4 text-right text-slate-400">•••</td>
     </tr>
   );
@@ -211,6 +232,7 @@ function UserRow({ user, index }) {
 // ==========================================
 // USERS PAGE
 // ==========================================
+
 export default function Users() {
   const [users, setUsers] = useState([]);
 
@@ -225,13 +247,18 @@ export default function Users() {
   const [error, setError] = useState("");
 
   // ==========================================
-  // FETCH USERS + PROBLEMS
+  // FETCH WARD HEAD USERS
   // ==========================================
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
         setError("");
+
+        // ======================================
+        // BACKEND URL
+        // ======================================
 
         const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -240,48 +267,56 @@ export default function Users() {
         }
 
         // ======================================
-        // USERS API + PROBLEMS API
+        // WARD HEAD DASHBOARD API
+        // Backend automatically logged-in
+        // Ward Head ke same ward ka data dega
         // ======================================
-        const [usersResponse, problemsResponse] = await Promise.all([
-          axios.get(`${backendUrl}/api/admin/users`),
-          axios.get(`${backendUrl}/api/admin/problems`),
-        ]);
+
+        const response = await axios.get(
+          `${backendUrl}/api/ward-head/dashboard`,
+          {
+            withCredentials: true,
+          }
+        );
 
         // ======================================
-        // CHECK USERS RESPONSE
+        // CHECK RESPONSE
         // ======================================
-        if (!usersResponse.data?.success) {
-          setError(usersResponse.data?.message || "Failed to load users");
-          return;
+
+        if (!response.data?.success) {
+          throw new Error(
+            response.data?.message || "Failed to load ward users"
+          );
         }
 
         // ======================================
-        // USERS DATA
+        // USERS
+        // Same ward ke recent users
         // ======================================
-        const usersData = Array.isArray(usersResponse.data?.users)
-          ? usersResponse.data.users
+
+        const usersData = Array.isArray(response.data?.recentUsers)
+          ? response.data.recentUsers
           : [];
 
         // ======================================
-        // PROBLEMS DATA
+        // ISSUES
+        // Same ward ke recent issues
         // ======================================
-        const problemsData =
-          problemsResponse.data?.success &&
-          Array.isArray(problemsResponse.data?.problems)
-            ? problemsResponse.data.problems
-            : [];
+
+        const problemsData = Array.isArray(response.data?.recentIssues)
+          ? response.data.recentIssues
+          : [];
 
         // ======================================
-        // ADD ISSUE COUNT TO EVERY USER
+        // ADD ISSUE COUNT
         // ======================================
+
         const usersWithIssueCount = usersData.map((user) => {
           const userId = user._id?.toString();
 
           const issueCount = problemsData.filter((problem) => {
             const createdBy = problem.createdBy;
 
-            // createdBy populated object ho
-            // ya direct ObjectId/string ho
             const createdById =
               typeof createdBy === "object" && createdBy !== null
                 ? (createdBy._id || createdBy.id)?.toString()
@@ -292,6 +327,7 @@ export default function Users() {
 
           return {
             ...user,
+
             issueCount,
           };
         });
@@ -299,17 +335,18 @@ export default function Users() {
         // ======================================
         // SET USERS
         // ======================================
+
         setUsers(usersWithIssueCount);
       } catch (error) {
         console.error(
-          "Fetch users error:",
+          "Fetch Ward Head users error:",
           error.response?.data || error.message
         );
 
         setError(
           error.response?.data?.message ||
             error.message ||
-            "Failed to load users"
+            "Failed to load ward users"
         );
       } finally {
         setLoading(false);
@@ -322,13 +359,28 @@ export default function Users() {
   // ==========================================
   // FILTER USERS
   // ==========================================
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const searchableText = [
         user.name,
+
+        user.firstName,
+
+        user.middleName,
+
+        user.lastName,
+
         user.phone,
+
         user.district,
+
         user.localBody,
+
+        user.block,
+
+        user.panchayat,
+
         user.ward,
       ]
         .filter(Boolean)
@@ -348,46 +400,73 @@ export default function Users() {
   // ==========================================
   // CLEAR FILTERS
   // ==========================================
+
   const clearFilters = () => {
     setQuery("");
+
     setStatus("All users");
+
     setCurrentPage(1);
   };
 
   // ==========================================
   // METRICS
   // ==========================================
+
   const metrics = [
     {
       label: "Total Users",
+
       value: users.length.toLocaleString("en-IN"),
+
       change: "—",
-      description: "Registered citizens",
+
+      description: "Registered citizens in your ward",
+
       tone: "brand",
+
       icon: "♙",
     },
+
     {
       label: "Active This Month",
+
       value: "—",
+
       change: "—",
+
       description: "Not available yet",
+
       tone: "saffron",
+
       icon: "⚡",
     },
+
     {
       label: "New Registrations",
+
       value: "—",
+
       change: "—",
+
       description: "Not available yet",
+
       tone: "success",
+
       icon: "↗️",
     },
+
     {
       label: "Incomplete Profiles",
+
       value: "—",
+
       change: "—",
+
       description: "Not available yet",
+
       tone: "slate",
+
       icon: "▤",
     },
   ];
@@ -395,6 +474,7 @@ export default function Users() {
   // ==========================================
   // LOADING
   // ==========================================
+
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center bg-slate-50">
@@ -412,6 +492,7 @@ export default function Users() {
   // ==========================================
   // ERROR
   // ==========================================
+
   if (error) {
     return (
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center bg-slate-50 px-4">
@@ -426,9 +507,17 @@ export default function Users() {
     );
   }
 
+  // ==========================================
+  // PAGE UI
+  // ==========================================
+
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gradient-to-br from-slate-50 via-brand-50/40 to-analytics-50 px-4 py-8 md:px-8 lg:px-12">
       <div className="mx-auto max-w-[1600px]">
+        {/* ======================================
+            HEADER
+        ====================================== */}
+
         <div className="animate-fade-in-up flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -444,8 +533,8 @@ export default function Users() {
             </h2>
 
             <p className="mt-2 max-w-md text-sm text-slate-500">
-              Manage citizens, track participation, and monitor profile quality
-              across all wards.
+              Manage citizens and monitor users registered in your assigned
+              ward.
             </p>
           </div>
 
@@ -466,13 +555,25 @@ export default function Users() {
           </div>
         </div>
 
+        {/* ======================================
+            METRICS
+        ====================================== */}
+
         <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric, index) => (
             <MetricCard key={metric.label} metric={metric} index={index} />
           ))}
         </section>
 
+        {/* ======================================
+            USER DIRECTORY
+        ====================================== */}
+
         <section className="animate-fade-in-up stagger-5 mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/50">
+          {/* ====================================
+              TOP
+          ==================================== */}
+
           <div className="border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50 p-6 md:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -481,7 +582,7 @@ export default function Users() {
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Search, filter and review all registered users.
+                  Search, filter and review users registered in your ward.
                 </p>
               </div>
 
@@ -489,6 +590,10 @@ export default function Users() {
                 {filteredUsers.length} results
               </span>
             </div>
+
+            {/* ==================================
+                SEARCH + FILTER
+            ================================== */}
 
             <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
               <div className="relative flex-1">
@@ -500,6 +605,7 @@ export default function Users() {
                   value={query}
                   onChange={(event) => {
                     setQuery(event.target.value);
+
                     setCurrentPage(1);
                   }}
                   placeholder="Search by name, mobile number or ward..."
@@ -510,13 +616,19 @@ export default function Users() {
                   <button
                     type="button"
                     aria-label="Clear search"
-                    onClick={() => setQuery("")}
+                    onClick={() => {
+                      setQuery("");
+                    }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100"
                   >
                     ×
                   </button>
                 )}
               </div>
+
+              {/* ==================================
+                  STATUS FILTER
+              ================================== */}
 
               <div className="flex gap-2 overflow-x-auto">
                 {["All users", "Active", "Review", "Inactive"].map((item) => (
@@ -525,6 +637,7 @@ export default function Users() {
                     type="button"
                     onClick={() => {
                       setStatus(item);
+
                       setCurrentPage(1);
                     }}
                     className={`rounded-xl border px-4 py-2.5 text-xs font-semibold transition ${
@@ -539,6 +652,10 @@ export default function Users() {
               </div>
             </div>
           </div>
+
+          {/* ====================================
+              TABLE
+          ==================================== */}
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
@@ -570,6 +687,10 @@ export default function Users() {
               </tbody>
             </table>
 
+            {/* ==================================
+                EMPTY STATE
+            ================================== */}
+
             {filteredUsers.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16">
                 <span className="grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-3xl text-slate-400">
@@ -581,7 +702,8 @@ export default function Users() {
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Try adjusting your search or filter criteria
+                  No registered users found in this ward or try adjusting your
+                  search.
                 </p>
 
                 <button
@@ -594,6 +716,10 @@ export default function Users() {
               </div>
             )}
           </div>
+
+          {/* ====================================
+              PAGINATION
+          ==================================== */}
 
           {filteredUsers.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
@@ -614,7 +740,9 @@ export default function Users() {
                   <button
                     key={page}
                     type="button"
-                    onClick={() => setCurrentPage(page)}
+                    onClick={() => {
+                      setCurrentPage(page);
+                    }}
                     className={`rounded-lg px-3.5 py-2 text-xs font-semibold ${
                       currentPage === page
                         ? "bg-gradient-to-r from-brand-700 to-brand-500 text-white shadow-lg"
