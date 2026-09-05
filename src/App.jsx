@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import AdminLayout from "./components/AdminLayout";
+import WardHeadProtectedRoute from "./components/WardHeadProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
@@ -14,10 +15,7 @@ import Reports from "./pages/Reports";
 import AdminAudit from "./pages/AdminAudit";
 import Settings from "./pages/Settings";
 
-// ==================================
 // Ward Head Pages
-// ==================================
-
 import WardHeadRegister from "./pages/WardHeadRegister";
 import WardHeadLogin from "./pages/WardHeadLogin";
 import WardHeadApprovalStatus from "./pages/wardHeadApprovalStatus";
@@ -27,115 +25,85 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ========================= */}
+        {/* PUBLIC WELCOME */}
+        {/* ========================= */}
 
-         {/* ================================== */}
-        {/* Ward Head Welcome Page */}
-        {/* ================================== */}
+        <Route path="/" element={<WardHeadWelcome />} />
+
+        {/* ========================= */}
+        {/* PUBLIC AUTH ROUTES */}
+        {/* ========================= */}
+
+        <Route path="/ward-head/register" element={<WardHeadRegister />} />
+
+        <Route path="/ward-head/login" element={<WardHeadLogin />} />
+
+        {/* ========================= */}
+        {/* PROTECTED WARD HEAD ROUTES */}
+        {/* ========================= */}
 
         <Route
-          path="/"
-          element={<WardHeadWelcome />}
-        />
+          path="/ward-head"
+          element={
+            <WardHeadProtectedRoute>
+              <AdminLayout />
+            </WardHeadProtectedRoute>
+          }
+        >
+          <Route index element={<Dashboard />} />
 
-        {/* ================================== */}
-        {/* Ward Head Public Routes */}
-        {/* ================================== */}
+          {/* Dashboard */}
+          <Route path="dashboard" element={<Dashboard />} />
 
-        <Route
-          path="/ward-head/register"
-          element={<WardHeadRegister />}
-        />
+          {/* Users */}
+          <Route path="users" element={<Users />} />
 
-        <Route
-          path="/ward-head/login"
-          element={<WardHeadLogin />}
-        />
+          {/* Issues */}
+          <Route path="issues" element={<Issues />} />
 
-         <Route
-          path="/ward-head/approval-status"
-          element={<WardHeadApprovalStatus />}
-        />
+          <Route path="issues/:id" element={<IssueDetails />} />
 
-        {/* ================================== */}
-        {/* Admin Routes */}
-        {/* ================================== */}
+          {/* Geography */}
+          <Route path="geography" element={<Geography />} />
 
-        <Route 
-         path="/admin"
-         element={<AdminLayout />}>
+          {/* Analytics */}
+          <Route path="analytics" element={<Analytics />} />
 
-          <Route
-            index
-            element={<Dashboard />}
-          />
+          {/* Calendar */}
+          <Route path="calendar" element={<Calendar />} />
 
-          <Route
-            path="users"
-            element={<Users />}
-          />
+          {/* Alerts */}
+          <Route path="alerts" element={<Alerts />} />
 
-          <Route
-            path="issues"
-            element={<Issues />}
-          />
+          {/* Reports */}
+          <Route path="reports" element={<Reports />} />
 
-          <Route
-            path="issues/:id"
-            element={<IssueDetails />}
-          />
+          {/* Admin Audit */}
+          <Route path="admin-audit" element={<AdminAudit />} />
 
-          <Route
-            path="geography"
-            element={<Geography />}
-          />
-
-          <Route
-            path="analytics"
-            element={<Analytics />}
-          />
-
-          <Route
-            path="calendar"
-            element={<Calendar />}
-          />
-
-          <Route
-            path="alerts"
-            element={<Alerts />}
-          />
-
-          <Route
-            path="reports"
-            element={<Reports />}
-          />
-
-          <Route
-            path="admin-audit"
-            element={<AdminAudit />}
-          />
-
-          <Route
-            path="settings"
-            element={<Settings />}
-          />
-
+          {/* Settings */}
+          <Route path="settings" element={<Settings />} />
         </Route>
 
-
-        {/* ================================== */}
-        {/* Fallback Route */}
-        {/* ================================== */}
-
-        {/* <Route
-          path="*"
-          element={<Dashboard />}
-        /> */}
+        {/* ========================= */}
+        {/* PROTECTED APPROVAL STATUS */}
+        {/* ========================= */}
 
         <Route
-          path="*"
-          element={<WardHeadWelcome />}
+          path="/ward-head/approval-status"
+          element={
+            <WardHeadProtectedRoute>
+              <WardHeadApprovalStatus />
+            </WardHeadProtectedRoute>
+          }
         />
 
+        {/* ========================= */}
+        {/* ALL UNKNOWN URL → WELCOME */}
+        {/* ========================= */}
+
+        <Route path="*" element={<WardHeadWelcome />} />
       </Routes>
     </BrowserRouter>
   );
