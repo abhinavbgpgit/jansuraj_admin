@@ -8,7 +8,7 @@ import districts from "../data/districts.json";
 // SEARCHABLE LOCATION PICKER
 // ==================================
 
-function LocationPicker({ districtId, value, onChange, type }) {
+function LocationPicker({ districtId, blockId, value, onChange, type }) {
   const [search, setSearch] = useState("");
 
   const [open, setOpen] = useState(false);
@@ -46,8 +46,14 @@ function LocationPicker({ districtId, value, onChange, type }) {
 
     // Panchayat
     if (type === "panchayat") {
-      return district?.rural?.panchayats || [];
-    }
+  if (!blockId) {
+    return [];
+  }
+
+  return (district?.rural?.panchayats || []).filter(
+    (panchayat) => panchayat.block_id === blockId
+  );
+}
 
     // Urban Local Body
     if (type === "localBody") {
@@ -55,7 +61,7 @@ function LocationPicker({ districtId, value, onChange, type }) {
     }
 
     return [];
-  }, [district, type]);
+ }, [district, blockId, type]);
 
   // ==================================
   // SELECTED ITEM
@@ -946,6 +952,7 @@ const WardHeadRegister = () => {
                   <LocationPicker
                     type="panchayat"
                     districtId={formData.district}
+                    blockId={formData.block}
                     value={formData.panchayat}
                     onChange={(value) =>
                       handleLocationChange("panchayat", value)
